@@ -1,0 +1,69 @@
+pip install word2number
+
+
+import re
+from word2number import w2n
+
+def extract_invoice_amount(value_content):
+    """
+    Extracts the invoice amount from various formats of text.
+    
+    Args:
+    value_content (str): The text containing the invoice amount.
+    
+    Returns:
+    str: The extracted amount or 'N/A' if not found.
+    """
+    # Check if the input is None or empty
+    if not value_content:
+        return "N/A"
+    
+    # Convert to lowercase for case-insensitive matching
+    value_content = value_content.lower()
+    
+    # Try to find a match for common amount formats
+    amount_match = re.search(r'(?:amount|total|due):?\s*[\$£€]?([0-9,]+(?:\.[0-9]{2})?)', value_content)
+    if amount_match:
+        # Remove commas and return the amount
+        return amount_match.group(1).replace(',', '')
+    
+    # Check for amounts written in words
+    words_match = re.search(r'(?:amount|total|due):?\s*(.+)', value_content)
+    if words_match:
+        try:
+            # Attempt to convert words to numbers
+            amount = w2n.word_to_num(words_match.group(1))
+            return str(amount)
+        except ValueError:
+            # If conversion fails, it's not a valid word-based amount
+            pass
+    
+    # If no match found, return 'N/A'
+    return "N/A"
+
+# Test cases
+test_cases = [
+    ("Total Amount: $500", "500"),
+    ("Amount: 500", "500"),
+    ("Amount Due: 500.00", "500.00"),
+    ("Invoice Total: £1,234.56", "1234.56"),
+    ("Balance: €789", "789"),
+    ("Amount: Five Hundred", "500"),
+    ("Total: One Thousand Two Hundred Thirty-Four", "1234"),
+    ("Due: ", "N/A"),
+    ("Some other text", "N/A"),
+    ("Amount: $1,000,000.00", "1000000.00")
+]
+
+def run_tests():
+    for i, (input_text, expected_output) in enumerate(test_cases, 1):
+        result = extract_invoice_amount(input_text)
+        status = "PASS" if result == expected_output else "FAIL"
+        print(f"Test {i}: {status}")
+        print(f"  Input: {input_text}")
+        print(f"  Expected: {expected_output}")
+        print(f"  Got: {result}")
+        print()
+
+if __name__ == "__main__":
+    run_tests()
